@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash",
+      "WebSearch",
+      "WebFetch",
+      "Bash(npx shadcn@latest add:*)",
+      "Bash(npm run lint)",
+      "Bash(npm run build:*)",
+      "Bash(dir /b /s componentssectionspricing.tsx componentssectionscontact.tsx libvalidationsnewsletter.ts componentsformsnewsletter-form.tsx)",
+      "mcp__playwright"
+    ]
+  },
+  "enabledMcpjsonServers": ["playwright"],
+  "enableAllProjectMcpServers": true
+}
