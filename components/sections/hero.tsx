@@ -19,12 +19,9 @@ export function Hero() {
             <br className="hidden sm:block" />
             프로덕션 준비 완료된 스타터킷입니다.
           </p>
-          <div className="mt-10 flex flex-col gap-4 sm:flex-row">
+          <div className="mt-10">
             <Button size="lg" asChild>
               <Link href="#features">시작하기</Link>
-            </Button>
-            <Button size="lg" variant="outline" asChild>
-              <Link href="#contact">더 알아보기</Link>
             </Button>
           </div>
         </div>
