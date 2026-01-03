@@ -1,23 +1,39 @@
 {
   "permissions": {
     "allow": [
-      "Bash",
-      "WebFetch",
       "Bash(npx shadcn@latest add:*)",
       "Bash(npm run lint)",
       "Bash(npm run build:*)",
       "Bash(dir /b /s componentssectionspricing.tsx componentssectionscontact.tsx libvalidationsnewsletter.ts componentsformsnewsletter-form.tsx)",
       "mcp__playwright",
+      "mcp__sequential-thinking",
+      "mcp__shadcn",
       "Read(//c/Users/admin/**)",
-      "Read(//c/Users/admin/.claude/**)"
+      "Read(//c/Users/admin/.claude/**)",
+      "Skill(git:commit)",
+      "Skill(git:commit:*)",
+      "Bash(git add:*)"
     ]
   },
-  "enabledMcpjsonServers": ["playwright"],
   "enableAllProjectMcpServers": true,
+  "enabledMcpjsonServers": [
+    "playwright"
+  ],
   "hooks": {
+    "PermissionRequest": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python C:\\Users\\admin\\workspace\\courses\\claude-nextjs-starters\\.claude\\hooks\\notification-hook.py"
+          }
+        ]
+      }
+    ],
     "Notification": [
       {
-        "matcher": "permission_prompt",
+        "matcher": "*",
         "hooks": [
           {
             "type": "command",

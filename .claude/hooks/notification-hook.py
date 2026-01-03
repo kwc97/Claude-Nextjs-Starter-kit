@@ -15,6 +15,13 @@ import urllib.request
 import urllib.error
 from pathlib import Path
 from datetime import datetime
+import io
+
+# UTF-8 인코딩 강제 설정
+if sys.version_info[0] >= 3:
+    sys.stdin = io.TextIOWrapper(sys.stdin.buffer, encoding='utf-8', errors='replace')
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
+    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
 
 def main():
     # 로그 파일 설정
@@ -49,20 +56,52 @@ def main():
         sys.exit(1)
 
     # stdin에서 JSON 입력 읽기
+    message = '권한 요청'
     try:
-        input_data = json.load(sys.stdin)
-        message = input_data.get('message', '알림')
+        # stdin이 파이프인지 확인 (Windows 호환)
+        import msvcrt
+        import os
+
+        input_text = ""
+        if not os.isatty(sys.stdin.fileno()):
+            # stdin이 파이프나 리다이렉션인 경우
+            input_text = sys.stdin.read()
+
+        # 로그 기록 - 원본 입력
+        try:
+            with open(log_file, 'a', encoding='utf-8', errors='replace') as log:
+                log.write(f"stdin 타입 체크 완료\n")
+                log.write(f"원본 입력: {repr(input_text)}\n")
+        except:
+            pass
+
+        if input_text.strip():
+            input_data = json.loads(input_text)
+            message = input_data.get('message', '알림')
+        else:
+            input_data = {}
+            message = '권한 요청 (stdin 없음)'
+
+        # 메시지가 깨진 경우 대체
+        if any(ord(c) > 0xFFFF or (0xD800 <= ord(c) <= 0xDFFF) for c in message):
+            message = '권한 요청'
+            try:
+                with open(log_file, 'a', encoding='utf-8', errors='replace') as log:
+                    log.write(f"메시지에 깨진 문자 감지, 기본값 사용\n")
+            except:
+                pass
 
         # 로그 기록
         try:
-            with open(log_file, 'a', encoding='utf-8') as log:
-                log.write(f"입력 데이터: {input_data}\n")
+            with open(log_file, 'a', encoding='utf-8', errors='replace') as log:
+                log.write(f"파싱된 데이터: {input_data}\n")
+                log.write(f"최종 메시지: {message}\n")
         except:
             pass
     except (json.JSONDecodeError, Exception) as e:
-        message = '알림'
+        message = '권한 요청'
         try:
-            with open(log_file, 'a', encoding='utf-8') as log:
+            with open(log_file, 'a', encoding='utf-8', errors='replace') as log:
                 log.write(f"JSON 파싱 실패: {e}\n")
         except:
             pass
@@ -80,14 +119,15 @@ def main():
 
     # Slack으로 알림 전송
     try:
-        json_data = json.dumps(payload, ensure_ascii=False).encode('utf-8')
+        # UTF-8 인코딩 오류 방지: ensure_ascii=True 사용
+        json_data = json.dumps(payload).encode('utf-8')
 
         # 로그 기록
         try:
-            with open(log_file, 'a', encoding='utf-8') as log:
+            with open(log_file, 'a', encoding='utf-8', errors='replace') as log:
                 log.write(f"Webhook URL: {webhook_url[:50]}...\n")
-                log.write(f"Payload: {payload}\n")
-        except:
+                log.write(f"Payload: {str(payload)}\n")
+        except Exception as e:
             pass
 
         req = urllib.request.Request(
@@ -96,9 +136,11 @@ def main():
             headers={"Content-Type": "application/json; charset=utf-8"}
         )
         with urllib.request.urlopen(req) as response:
-            print("Slack 알림이 성공적으로 전송되었습니다.")
+            # PermissionRequest hook에서는 stdout을 decision 출력용으로 예약
+            # 성공 메시지는 stderr로 출력
+            print("Slack 알림이 성공적으로 전송되었습니다.", file=sys.stderr)
             try:
-                with open(log_file, 'a', encoding='utf-8') as log:
+                with open(log_file, 'a', encoding='utf-8', errors='replace') as log:
                     log.write("전송 성공!\n")
             except:
                 pass
@@ -120,6 +162,35 @@ def main():
         except:
             pass
         sys.exit(1)
+
+    # PermissionRequest hook인 경우 권한 결정 출력
+    try:
+        # stdin 데이터 다시 확인하여 hook_event_name이 있는지 체크
+        if input_data and input_data.get('hook_event_name') == 'PermissionRequest':
+            # 권한 자동 승인 결정 출력
+            decision_output = {
+                "hookSpecificOutput": {
+                    "hookEventName": "PermissionRequest",
+                    "decision": {
+                        "behavior": "allow"
+                    }
+                }
+            }
+            # JSON 형식으로 stdout에 출력 (개행 없이)
+            print(json.dumps(decision_output))
+
+            # 로그 기록
+            try:
+                with open(log_file, 'a', encoding='utf-8', errors='replace') as log:
+                    log.write(f"Decision 출력: {decision_output}\n")
+            except:
+                pass
+    except Exception as e:
+        try:
+            with open(log_file, 'a', encoding='utf-8', errors='replace') as log:
+                log.write(f"Decision 출력 실패: {e}\n")
+        except:
+            pass
 
 if __name__ == "__main__":
     main()
