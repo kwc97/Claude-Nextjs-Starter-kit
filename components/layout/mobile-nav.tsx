@@ -41,8 +41,16 @@ export function MobileNav() {
               {item.title}
             </Link>
           ))}
-          <div className="pt-4 border-t">
-            <div className="flex items-center justify-between">
+          <div className="pt-4 border-t space-y-4">
+            <div className="flex flex-col gap-2">
+              <Button variant="outline" asChild onClick={() => setOpen(false)}>
+                <Link href="/auth/login">로그인</Link>
+              </Button>
+              <Button asChild onClick={() => setOpen(false)}>
+                <Link href="/auth/signup">회원가입</Link>
+              </Button>
+            </div>
+            <div className="flex items-center justify-between pt-2">
               <span className="text-sm font-medium">테마</span>
               <ThemeToggle />
             </div>
